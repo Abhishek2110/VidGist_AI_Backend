@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from utils import extract_audio, transcribe_audio
 from vector_db import create_collection, store_embeddings
 from utils import split_text
+from vector_db import search
+from rag_pipeline import generate_answer
 
 app = FastAPI()
 
@@ -44,10 +46,13 @@ async def upload_video(file: UploadFile = File(...)):
         "filename": file.filename,
         "transcript": transcript
     }
-    
-from vector_db import search
 
 @app.get("/search")
 def search_query(q: str):
     results = search(q)
     return {"results": results}
+
+@app.get("/ask")
+def ask_question(q: str):
+    answer = generate_answer(q)
+    return {"answer": answer}
