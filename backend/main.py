@@ -2,6 +2,8 @@ import os
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from utils import extract_audio, transcribe_audio
+from vector_db import create_collection, store_embeddings
+from utils import split_text
 
 app = FastAPI()
 
@@ -34,7 +36,18 @@ async def upload_video(file: UploadFile = File(...)):
     # Transcribe
     transcript = transcribe_audio(audio_path)
 
+    create_collection()
+    chunks = split_text(transcript)
+    store_embeddings(chunks)
+
     return {
         "filename": file.filename,
         "transcript": transcript
     }
+    
+from vector_db import search
+
+@app.get("/search")
+def search_query(q: str):
+    results = search(q)
+    return {"results": results}
