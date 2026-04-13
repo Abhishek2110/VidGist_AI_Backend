@@ -26,26 +26,36 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 @app.post("/upload-video")
 async def upload_video(file: UploadFile = File(...)):
     video_path = os.path.join(UPLOAD_DIR, file.filename)
-
-    # Save video
-    with open(video_path, "wb") as f:
-        f.write(await file.read())
-
-    # Extract audio
     audio_path = os.path.join(AUDIO_DIR, file.filename + ".mp3")
-    extract_audio(video_path, audio_path)
 
-    # Transcribe
-    transcript = transcribe_audio(audio_path)
+    try:
+        # Save video
+        with open(video_path, "wb") as f:
+            f.write(await file.read())
 
-    create_collection()
-    chunks = split_text(transcript)
-    store_embeddings(chunks)
+        # Extract audio
+        extract_audio(video_path, audio_path)
 
-    return {
-        "filename": file.filename,
-        "transcript": transcript
-    }
+        # Transcribe
+        # transcript = transcribe_audio(audio_path)
+        transcript = "Temporary transcript for testing"
+    
+        # Vector DB
+        create_collection()
+        chunks = split_text(transcript)
+        store_embeddings(chunks)
+
+        return {
+            "filename": file.filename,
+            "transcript": transcript
+        }
+
+    finally:
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
 @app.get("/search")
 def search_query(q: str):
