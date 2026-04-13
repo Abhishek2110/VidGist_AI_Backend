@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from utils import extract_audio, transcribe_audio
+from utils import extract_audio
 from vector_db import create_collection, store_embeddings
 from utils import split_text
 from vector_db import search
