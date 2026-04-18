@@ -4,14 +4,28 @@ import time
 import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
+from dotenv import load_dotenv
 
-client = QdrantClient(":memory:")
+load_dotenv()
 
-COLLECTION_NAME = "vidgist"
-
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME")
 HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+HF_URL = os.getenv("HUGGING_FACE_URL")
 
-HF_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
+if QDRANT_URL:
+    # Production (Qdrant Cloud)
+    client = QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY
+    )
+else:
+    # Local development
+    client = QdrantClient(
+        host="localhost",
+        port=6333
+    )
 
 headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
@@ -52,10 +66,11 @@ def get_embedding(text):
 
 
 def create_collection():
-    client.recreate_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=384, distance=Distance.COSINE),
-    )
+    if COLLECTION_NAME not in [c.name for c in client.get_collections().collections]:
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+        )
 
 
 def store_embeddings(chunks):

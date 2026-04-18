@@ -1,26 +1,35 @@
 from langchain_groq import ChatGroq
 from vector_db import search
+import os
+from dotenv import load_dotenv
 
-llm = ChatGroq(model="openai/gpt-oss-120b")
+load_dotenv()
+
+LLM = os.getenv("LLM_MODEL")
+
+llm = ChatGroq(model=LLM)
 
 def generate_answer(query):
-    context_chunks = search(query)
-    context = "\n\n".join(context_chunks)
+    try:
+        context_chunks = search(query)
+        context = "\n\n".join(context_chunks)
 
-    prompt = f"""
-    You are an AI assistant.
+        prompt = f"""
+        You are an AI assistant.
 
-    Answer the question based ONLY on the context below.
+        Answer the question based ONLY on the context below.
 
-    Context:
-    {context}
+        Context:
+        {context}
 
-    Question:
-    {query}
+        Question:
+        {query}
 
-    Answer:
-    """
+        Answer:
+        """
 
-    response = llm.invoke(prompt)
+        response = llm.invoke(prompt)
 
-    return response.content
+        return response.content
+    except Exception as e:
+        return "Sorry, I couldn't generate an answer at this time."

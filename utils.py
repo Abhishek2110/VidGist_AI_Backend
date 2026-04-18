@@ -1,10 +1,13 @@
 import os
 import re
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
-
-DEEPGRAM_URL = "https://api.deepgram.com/v1/listen"
+DEEPGRAM_URL = os.getenv("DEEPGRAM_URL")
+DEEPGRAM_MODEL = os.getenv("DEEPGRAM_MODEL")
 
 headers = {
     "Authorization": f"Token {DEEPGRAM_API_KEY}",
@@ -20,7 +23,7 @@ def transcribe_audio(file_path):
                 "Content-Type": "video/mp4"
             },
             params={
-                "model": "nova-2",
+                "model": DEEPGRAM_MODEL,
                 "smart_format": "true"
             },
             data=f
