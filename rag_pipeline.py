@@ -9,9 +9,13 @@ LLM = os.getenv("LLM_MODEL")
 
 llm = ChatGroq(model=LLM)
 
-def generate_answer(query):
+def generate_answer(query, video_id):
     try:
-        context_chunks = search(query)
+        context_chunks = search(query, video_id)
+        
+        if not context_chunks:
+            return "Please upload a video first."
+        
         context = "\n\n".join(context_chunks)
 
         prompt = f"""

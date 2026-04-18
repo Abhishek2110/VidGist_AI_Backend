@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from utils import transcribe_audio, split_text, clean_filename
 from vector_db import create_collection, store_embeddings, search
 from rag_pipeline import generate_answer
+import uuid
 
 app = FastAPI()
 
@@ -23,6 +24,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload-video")
 async def upload_video(file: UploadFile = File(...)):
+    
+    video_id = str(uuid.uuid4())
     video_path = None
 
     try:
@@ -46,9 +49,10 @@ async def upload_video(file: UploadFile = File(...)):
         # Vector DB
         create_collection()
         chunks = split_text(transcript)
-        store_embeddings(chunks)
+        store_embeddings(chunks, video_id)
 
         return {
+            "video_id": video_id,
             "filename": clean_name,
             "transcript": transcript
         }
@@ -71,9 +75,9 @@ def search_query(q: str):
 
 
 @app.get("/ask")
-def ask_question(q: str):
+def ask_question(q: str, video_id: str):
     try:
-        answer = generate_answer(q)
+        answer = generate_answer(q, video_id)
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

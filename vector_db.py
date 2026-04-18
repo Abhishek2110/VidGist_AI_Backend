@@ -73,7 +73,7 @@ def create_collection():
         )
 
 
-def store_embeddings(chunks):
+def store_embeddings(chunks, video_id):
     points = []
 
     for chunk in chunks:
@@ -83,7 +83,7 @@ def store_embeddings(chunks):
             PointStruct(
                 id=str(uuid.uuid4()),
                 vector=vector,
-                payload={"text": chunk}
+                payload={"text": chunk, "video_id": video_id}
             )
         )
 
@@ -92,14 +92,18 @@ def store_embeddings(chunks):
         points=points
     )
 
-
-def search(query):
+def search(query, video_id):
     query_vector = get_embedding(query)
 
     results = client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
-        limit=3
+        limit=3,
+        query_filter={
+            "must": [
+                {"key": "video_id", "match": {"value": video_id}}
+            ]
+        }
     )
 
     return [point.payload["text"] for point in results.points]
