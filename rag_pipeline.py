@@ -12,6 +12,7 @@ llm = ChatGroq(model=LLM)
 def generate_answer(query, video_id):
     try:
         context_chunks = search(query, video_id)
+        print("Search results:", context_chunks)
         
         if not context_chunks:
             return "Please upload a video first."
