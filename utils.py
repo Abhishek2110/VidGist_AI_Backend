@@ -1,7 +1,6 @@
 import os
 import re
 import requests
-import subprocess
 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 
@@ -11,50 +10,33 @@ headers = {
     "Authorization": f"Token {DEEPGRAM_API_KEY}",
 }
 
-def extract_audio(video_path, audio_path):
-    command = [
-        "ffmpeg",
-        "-i", video_path,
-        "-vn",
-        "-acodec", "mp3",
-        "-ac", "1",
-        "-ar", "16000",
-        "-y",
-        audio_path
-    ]
+def transcribe_audio(file_path):
 
-    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return audio_path
+    with open(file_path, "rb") as f:
+        response = requests.post(
+            DEEPGRAM_URL,
+            headers={
+                **headers,
+                "Content-Type": "video/mp4"
+            },
+            params={
+                "model": "nova-2",
+                "smart_format": "true"
+            },
+            data=f
+        )
 
-def transcribe_audio(audio_path):
+    data = response.json()
 
-    try:
-        with open(audio_path, "rb") as f:
-            response = requests.post(
-                DEEPGRAM_URL,
-                headers={**headers, "Content-Type": "audio/mp3"},
-                params={
-                    "model": "nova-2",
-                    "smart_format": "true"
-                },
-                data=f
-            )
+    transcript = data.get("results", {}) \
+        .get("channels", [{}])[0] \
+        .get("alternatives", [{}])[0] \
+        .get("transcript", "")
 
+    if not transcript:
+        raise Exception("Empty transcript")
 
-        data = response.json()
-
-        transcript = data.get("results", {}) \
-            .get("channels", [{}])[0] \
-            .get("alternatives", [{}])[0] \
-            .get("transcript", "")
-
-        if not transcript:
-            raise Exception("Empty transcript")
-
-        return transcript
-
-    except Exception as e:
-        return "Error: Transcription failed"
+    return transcript
 
 
 def split_text(text, chunk_size=300):

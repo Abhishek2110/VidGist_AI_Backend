@@ -1,8 +1,7 @@
 import os
-import re
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from utils import transcribe_audio, split_text, extract_audio, clean_filename
+from utils import transcribe_audio, split_text, clean_filename
 from vector_db import create_collection, store_embeddings, search
 from rag_pipeline import generate_answer
 
@@ -19,15 +18,12 @@ app.add_middleware(
 MAX_FILE_SIZE = 30 * 1024 * 1024
 
 UPLOAD_DIR = "uploads"
-AUDIO_DIR = "audio"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(AUDIO_DIR, exist_ok=True)
 
 
 @app.post("/upload-video")
 async def upload_video(file: UploadFile = File(...)):
     video_path = None
-    audio_path = None
 
     try:
         contents = await file.read()
@@ -43,13 +39,9 @@ async def upload_video(file: UploadFile = File(...)):
         with open(video_path, "wb") as f:
             f.write(contents)
 
-        # Extract audio
-        base_name = os.path.splitext(clean_name)[0]
-        audio_path = os.path.join(AUDIO_DIR, base_name + ".mp3")
-        extract_audio(video_path, audio_path)
 
-        # Transcribe audio
-        transcript = transcribe_audio(audio_path)
+        # Transcribe video
+        transcript = transcribe_audio(video_path)
 
         # Vector DB
         create_collection()
@@ -67,9 +59,6 @@ async def upload_video(file: UploadFile = File(...)):
     finally:
         if video_path and os.path.exists(video_path):
             os.remove(video_path)
-
-        if audio_path and os.path.exists(audio_path):
-            os.remove(audio_path)
 
 
 @app.get("/search")
