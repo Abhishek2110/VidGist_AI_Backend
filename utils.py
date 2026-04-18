@@ -1,62 +1,60 @@
 import os
+import re
 import requests
-import time
+import subprocess
 
-ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 
-UPLOAD_URL = "https://api.assemblyai.com/v2/upload"
-TRANSCRIPT_URL = "https://api.assemblyai.com/v2/transcript"
+DEEPGRAM_URL = "https://api.deepgram.com/v1/listen"
 
 headers = {
-    "authorization": ASSEMBLYAI_API_KEY
+    "Authorization": f"Token {DEEPGRAM_API_KEY}",
 }
 
+def extract_audio(video_path, audio_path):
+    command = [
+        "ffmpeg",
+        "-i", video_path,
+        "-vn",
+        "-acodec", "mp3",
+        "-ac", "1",
+        "-ar", "16000",
+        "-y",
+        audio_path
+    ]
 
-# 🔥 Step 1: Upload file to AssemblyAI
-def upload_file(file_path):
-    with open(file_path, "rb") as f:
-        response = requests.post(UPLOAD_URL, headers=headers, data=f)
-    return response.json()["upload_url"]
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return audio_path
+
+def transcribe_audio(audio_path):
+
+    try:
+        with open(audio_path, "rb") as f:
+            response = requests.post(
+                DEEPGRAM_URL,
+                headers={**headers, "Content-Type": "audio/mp3"},
+                params={
+                    "model": "nova-2",
+                    "smart_format": "true"
+                },
+                data=f
+            )
 
 
-# 🔥 Step 2: Request transcription
-def request_transcript(audio_url):
-    json_data = {
-        "audio_url": audio_url
-    }
-    response = requests.post(TRANSCRIPT_URL, json=json_data, headers=headers)
-    return response.json()["id"]
-
-
-# 🔥 Step 3: Poll for result
-def get_transcript(transcript_id):
-    url = f"{TRANSCRIPT_URL}/{transcript_id}"
-
-    while True:
-        response = requests.get(url, headers=headers)
         data = response.json()
 
-        if data["status"] == "completed":
-            return data["text"]
+        transcript = data.get("results", {}) \
+            .get("channels", [{}])[0] \
+            .get("alternatives", [{}])[0] \
+            .get("transcript", "")
 
-        elif data["status"] == "error":
-            return "Error in transcription"
+        if not transcript:
+            raise Exception("Empty transcript")
 
-        time.sleep(3)
+        return transcript
 
-
-# 🔥 MAIN FUNCTION
-def transcribe_audio(file_path):
-    audio_url = upload_file(file_path)
-    transcript_id = request_transcript(audio_url)
-    transcript = get_transcript(transcript_id)
-
-    return transcript
-
-
-# 🔥 OPTIONAL (skip ffmpeg for now)
-def extract_audio(video_path, audio_path):
-    return video_path
+    except Exception as e:
+        return "Error: Transcription failed"
 
 
 def split_text(text, chunk_size=300):
@@ -68,3 +66,6 @@ def split_text(text, chunk_size=300):
         chunks.append(chunk)
 
     return chunks
+
+def clean_filename(filename):
+    return re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)

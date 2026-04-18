@@ -5,3 +5,4 @@ python-multipart
 qdrant-client
 langchain-core
 langchain-groq
+ffmpeg
