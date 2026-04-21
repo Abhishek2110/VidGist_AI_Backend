@@ -54,3 +54,18 @@ def split_text(text, chunk_size=300):
 
 def clean_filename(filename):
     return re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+
+def clean_text(text):
+    if not text:
+        return ""
+
+    # remove **bold**
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+
+    # remove bullet points (- or •)
+    text = re.sub(r"^[-•]\s*", "", text, flags=re.MULTILINE)
+
+    # remove extra markdown symbols
+    text = re.sub(r"[*#`]", "", text)
+
+    return text.strip()
