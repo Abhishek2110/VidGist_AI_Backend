@@ -12,7 +12,6 @@ llm = ChatGroq(model=LLM)
 def generate_answer(query, video_id):
     try:
         context_chunks = search(query, video_id)
-        print("Search results:", context_chunks)
         
         if not context_chunks:
             return "Please upload a video first."
@@ -37,5 +36,4 @@ def generate_answer(query, video_id):
 
         return response.content
     except Exception as e:
-        # return "Sorry, I couldn't generate an answer at this time."
-        return str(e)
+        return "Sorry, I couldn't generate an answer at this time."
