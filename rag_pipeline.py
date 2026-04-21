@@ -37,4 +37,5 @@ def generate_answer(query, video_id):
 
         return response.content
     except Exception as e:
-        return "Sorry, I couldn't generate an answer at this time."
+        # return "Sorry, I couldn't generate an answer at this time."
+        return str(e)
