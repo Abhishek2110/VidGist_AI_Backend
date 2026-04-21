@@ -3,8 +3,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from utils import transcribe_audio, split_text, clean_filename
 from vector_db import create_collection, store_embeddings, search
-from rag_pipeline import generate_answer
 import uuid
+from agents import multi_agent_pipeline
 
 app = FastAPI()
 
@@ -77,7 +77,7 @@ def search_query(q: str):
 @app.get("/ask")
 def ask_question(q: str, video_id: str):
     try:
-        answer = generate_answer(q, video_id)
+        answer = multi_agent_pipeline(q, video_id)
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
