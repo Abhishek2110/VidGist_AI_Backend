@@ -8,6 +8,7 @@ from agents import multi_agent_pipeline
 from database import SessionLocal
 from models import Chat, Message
 from sqlalchemy.orm import Session
+from auth import get_current_user
 
 app = FastAPI()
 
@@ -32,10 +33,13 @@ def get_db():
         db.close()
 
 @app.post("/upload-video")
-async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_video(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
 
     video_id = str(uuid.uuid4())
-    user_id = "6192f9bd-b8fc-421e-b8a7-b7539cef7842"
     video_path = None
 
     try:
@@ -93,8 +97,22 @@ def search_query(q: str):
 
 
 @app.get("/ask")
-def ask_question(q: str, video_id: str, chat_id: str, db: Session = Depends(get_db)):
+def ask_question(
+    q: str,
+    video_id: str,
+    chat_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     try:
+        
+        chat = db.query(Chat).filter(
+        Chat.id == chat_id,
+        Chat.user_id == user_id
+        ).first()
+
+        if not chat:
+            raise HTTPException(status_code=403, detail="Unauthorized")
 
         # 🧠 Save user message
         user_msg = Message(
@@ -124,8 +142,10 @@ def ask_question(q: str, video_id: str, chat_id: str, db: Session = Depends(get_
     
 
 @app.get("/chat/list")
-def get_chats(db: Session = Depends(get_db)):
-    user_id = "6192f9bd-b8fc-421e-b8a7-b7539cef7842"
+def get_chats(
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
 
     chats = db.query(Chat)\
         .filter(Chat.user_id == user_id)\
@@ -143,13 +163,20 @@ def get_chats(db: Session = Depends(get_db)):
     
     
 @app.get("/chat/{chat_id}")
-def get_messages(chat_id: str, db: Session = Depends(get_db)):
+def get_messages(
+    chat_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     
     # ✅ Fetch chat
     chat = db.query(Chat).filter(Chat.id == chat_id).first()
 
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
+    print("JWT USER:", type(user_id), user_id)
+    print("CHAT USER:", type(chat.user_id), chat.user_id)
+
+    if not chat or str(chat.user_id) != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
     # ✅ Fetch messages
     messages = db.query(Message).filter(Message.chat_id == chat_id).all()
