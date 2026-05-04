@@ -172,9 +172,6 @@ def get_messages(
     # ✅ Fetch chat
     chat = db.query(Chat).filter(Chat.id == chat_id).first()
 
-    print("JWT USER:", type(user_id), user_id)
-    print("CHAT USER:", type(chat.user_id), chat.user_id)
-
     if not chat or str(chat.user_id) != user_id:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
