@@ -187,3 +187,7 @@ def get_messages(
         ],
         "transcript": chat.transcript
     }  
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
