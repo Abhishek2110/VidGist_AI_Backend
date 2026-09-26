@@ -130,7 +130,7 @@ def ask_question(
             chat_id=chat_id,
             role="assistant",
             content=answer
-        )
+        
         db.add(bot_msg)
 
         db.commit()
